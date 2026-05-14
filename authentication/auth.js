@@ -103,6 +103,42 @@ const registerUserHandler = async (app, db, encrypt, encode, decode) => {
       console.log(err)
     }
   })
+  app.post("/api/reg-profile-picture", requireAuth, async (req, res) => {
+    try {
+      const rt = req.body;
+      console.log(rt)
+      const y = await verifySessionToken(req.user[0]);
+      if(!y?.code) {
+        let users = (await db.ref("users/").once("value")).val();
+        if(!users) return;
+        let usersKey = Object.keys(users);
+        let usersObj = Object.values(users);
+        let k;
+        usersObj.forEach((d, i) => {
+          if(d.email == y.email && d.password == y.password) {
+            k = usersKey[i];
+          }
+        })
+        if(k) {
+          const pk = db.ref(`users/${k}/data/profile_pictures`).push().key;
+          await db.ref(`users/${k}`).update({
+            ["data"]: {
+              profile_pictures: {
+                [pk]: rt.profile_pictures
+              },
+              user_bio: rt.user_bio
+            }
+          })
+          db.ref("users").once("value", (s) => {
+            console.log(s.val())
+          })
+          res.json({ message: "Picture updated"});
+        }
+      }
+    } catch(err) {
+      console.log(err)
+    }
+  })
   function requireAuth(req, res, next) {
     const authHeader = req.headers["authorization"];
     if (!authHeader ||!authHeader.startsWith("Bearer ")) {
