@@ -36,12 +36,13 @@ const registerUserHandler = async (app, db, encrypt, encode, decode) => {
   
       if (!vu) {
         const st = generateSessionToken(email, time, encrypt);
+        const lo = await getCountry(location);
         await db.ref("users/" + userId).set({
           email: email,
           password: encrypt(password),
           username: username.trim(),
           dob: dob || null,
-          location: location || null,
+          location: lo || null,
           user_number: n,
           user_preference: null,
           resgisteredAt: time || new Date().getTime()
@@ -71,6 +72,16 @@ const registerUserHandler = async (app, db, encrypt, encode, decode) => {
       console.log(err)
     }
   })
+  const getUserByEmail = async (email) => {
+    const snapshot = await db.ref("users").orderByChild("email").equalTo(email).once("value");
+    if(!snapshot.exists()) return null;
+    const data = snapshot.val();
+    const key = Object.keys(data)[0];
+    return {
+      id: key,
+      ...data[key]
+    }
+  }
   app.post("/api/reg-privacy", requireAuth, async (req, res) => {
     try {
       const rt = req.body;
@@ -139,6 +150,23 @@ const registerUserHandler = async (app, db, encrypt, encode, decode) => {
       console.log(err)
     }
   })
+  app.get("/api/reg-follow-users", requireAuth, async (req, res) => {
+    try {
+      const y = await verifySessionToken(req.user[0]);
+      if(!y?.code) {
+        let u = await getUserByEmail(y.email);
+        if(u) {
+          let loc = u.location;
+          const locData = await getCountry(loc);
+          console.log(locData);
+          res.json({ message: u});
+        }
+      }
+    } catch(err) {
+      console.log(err)
+      res.status(500).json({error: "Error occurred, please try again"})
+    }
+  })
   function requireAuth(req, res, next) {
     const authHeader = req.headers["authorization"];
     if (!authHeader ||!authHeader.startsWith("Bearer ")) {
@@ -172,6 +200,21 @@ const registerUserHandler = async (app, db, encrypt, encode, decode) => {
   function generateSessionToken(email, currentTime, encrypt) {
     const epT = "1d";
     return encrypt(`${email}/${currentTime}/${epT}`);
+  }
+  async function getCountry(loc) {
+    try {
+      const res = await fetch(
+        `https://api.bigdatacloud.net/data/reverse-geocode-client?latitude=${loc.latitude}&longitude=${loc.longitude}&localityLanguage=en`
+      );
+      if (!res.ok) {
+        throw new Error("Failed to fetch location data");
+      }
+      const data = await res.json();
+      return data;
+    } catch (err) {
+      console.error(err);
+      return null;
+    }
   }
 }
 
