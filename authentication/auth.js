@@ -37,16 +37,18 @@ const registerUserHandler = async (app, db, encrypt, encode, decode) => {
   
       if (!vu) {
         const st = generateSessionToken(email, encrypt);
-        const lo = await getCountry(location);
         await db.ref("users/" + userId).set({
+          auth: {
+            password: encrypt(password),
+            state: 0,
+          },
           email: email,
-          password: encrypt(password),
           username: username.trim(),
           dob: dob || null,
-          location: lo || null,
+          location: location || null,
           user_number: n,
           user_preference: null,
-          resgisteredAt: new Date().getTime()
+          resgisteredAt: new Date().getTime(),
         });
         const authToken = encode(email, password);
         res.json({ message: "Registered successfully", auth_token: authToken, sessionToken: st });
@@ -65,11 +67,11 @@ const registerUserHandler = async (app, db, encrypt, encode, decode) => {
       const r = (await db.ref("users/").once("value")).val();
       if(!r) res.status(404).json({ error: "User not found" });
       let usersObj = Object.values(r);
-      console.log(email, password)
-      usersObj = usersObj.find(t => t.email == email && t.password == encrypt(password));
+      usersObj = usersObj.find(t => t.email == email && t.auth.password == encrypt(password));
       if(!usersObj) res.status(500).json({ error: "User not found" });
+      const { state } = usersObj.auth;
       const authToken = encode(usersObj.email, password);
-      res.json({ message: "Login successfully", auth_token: authToken, sessionToken: st});
+      res.json({ message: "Login successfully", auth_token: authToken, sessionToken: st, state});
     } catch (err) {
       res.status(404).json({error: "Incorrect credentials"});
     }
@@ -95,7 +97,7 @@ const registerUserHandler = async (app, db, encrypt, encode, decode) => {
         let usersObj = Object.values(users);
         let k;
         usersObj.forEach((d, i) => {
-          if(d.email == y.email && d.password == y.password) {
+          if(d.email == y.email && d.auth.password == y.auth.password) {
             k = usersKey[i];
           }
         })
@@ -105,6 +107,9 @@ const registerUserHandler = async (app, db, encrypt, encode, decode) => {
               isDarkMode: false,
               ...rt
             }
+          })
+          await db.ref(`users/${k}/auth/`).update({
+            ["state"]: 1,
           })
           db.ref("users").once("value", (s) => {
             console.log(s.val())
@@ -128,7 +133,7 @@ const registerUserHandler = async (app, db, encrypt, encode, decode) => {
         let usersObj = Object.values(users);
         let k;
         usersObj.forEach((d, i) => {
-          if(d.email == y.email && d.password == y.password) {
+          if(d.email == y.email && d.auth.password == y.auth.password) {
             k = usersKey[i];
           }
         })
@@ -141,6 +146,9 @@ const registerUserHandler = async (app, db, encrypt, encode, decode) => {
               },
               user_bio: rt.user_bio
             }
+          })
+          await db.ref(`users/${k}/auth/`).update({
+            ["state"]: 2
           })
           db.ref("users").once("value", (s) => {
             console.log(s.val())
@@ -160,9 +168,7 @@ const registerUserHandler = async (app, db, encrypt, encode, decode) => {
         let u = await getUserByEmail(y.email);
         if(u) {
           let loc = u.location;
-          const locData = await getCountry(loc);
-          console.log(locData);
-          res.json({ message: u});
+          res.json({ message: loc});
         }
       }
     } catch(err) {
@@ -206,20 +212,6 @@ const registerUserHandler = async (app, db, encrypt, encode, decode) => {
   function generateSessionToken(email, encrypt) {
     let currentTime = Date.now()+SESSION_EXPIRES_IN;
     return encrypt(`${email}/${currentTime}`);
-  }
-  async function getCountry(loc) {
-    console.log(loc)
-    try {
-      const res = await fetch(`https://api.bigdatacloud.net/data/reverse-geocode-client?latitude=${loc.latitude}&longitude=${loc.longitude}&localityLanguage=en`);
-      if (!res.ok) {
-        throw new Error("Failed to fetch location data");
-      }
-      const data = await res.json();
-      return data;
-    } catch (err) {
-      console.error(err);
-      return null;
-    }
   }
 }
 
