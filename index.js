@@ -26,7 +26,9 @@ const mailings = {
 }
 initializeEmail(app, mailings);
 registerUserHandler(app, db, encrypt, encode, decode);
-
+app.get("/", (req, res) => {
+  res.send("<h1>Welcome to SnapSend!</h1>");
+})
 http.listen(5000, "0.0.0.0", () => {
   console.log("Server listening on port 5000");
 });
