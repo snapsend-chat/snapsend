@@ -1,4 +1,5 @@
 const registerUserHandler = async (app, db, encrypt, encode, decode) => {
+  const SESSION_EXPIRES_IN = 1000 * 60 * 60 * 240; 
   app.post("/api/register", async (req, res) => {
     const { password, email, username, location, dob, time } = req.body;
     try {
@@ -35,7 +36,7 @@ const registerUserHandler = async (app, db, encrypt, encode, decode) => {
       }
   
       if (!vu) {
-        const st = generateSessionToken(email, time, encrypt);
+        const st = generateSessionToken(email, encrypt);
         const lo = await getCountry(location);
         await db.ref("users/" + userId).set({
           email: email,
@@ -45,7 +46,7 @@ const registerUserHandler = async (app, db, encrypt, encode, decode) => {
           location: lo || null,
           user_number: n,
           user_preference: null,
-          resgisteredAt: time || new Date().getTime()
+          resgisteredAt: new Date().getTime()
         });
         const authToken = encode(email, password);
         res.json({ message: "Registered successfully", auth_token: authToken, sessionToken: st });
@@ -59,17 +60,18 @@ const registerUserHandler = async (app, db, encrypt, encode, decode) => {
   });
   app.post("/api/signin", async (req, res) => {
     try {
-      const { email, password, time } = req.body;
-      const st = generateSessionToken(email, time, encrypt);
-      const r = (await db.ref("/users/").once("value")).val();
-      if(!r) res.status(500).json({ error: "User not found" });
+      const { email, password } = req.body;
+      const st = generateSessionToken(email, encrypt);
+      const r = (await db.ref("users/").once("value")).val();
+      if(!r) res.status(404).json({ error: "User not found" });
       let usersObj = Object.values(r);
+      console.log(email, password)
       usersObj = usersObj.find(t => t.email == email && t.password == encrypt(password));
       if(!usersObj) res.status(500).json({ error: "User not found" });
       const authToken = encode(usersObj.email, password);
       res.json({ message: "Login successfully", auth_token: authToken, sessionToken: st});
     } catch (err) {
-      console.log(err)
+      res.status(404).json({error: "Incorrect credentials"});
     }
   })
   const getUserByEmail = async (email) => {
@@ -85,7 +87,7 @@ const registerUserHandler = async (app, db, encrypt, encode, decode) => {
   app.post("/api/reg-privacy", requireAuth, async (req, res) => {
     try {
       const rt = req.body;
-      const y = await verifySessionToken(req.user[0]);
+      const y = req.user;
       if(!y?.code) {
         let users = (await db.ref("users/").once("value")).val();
         if(!users) return;
@@ -118,7 +120,7 @@ const registerUserHandler = async (app, db, encrypt, encode, decode) => {
     try {
       const rt = req.body;
       console.log(rt)
-      const y = await verifySessionToken(req.user[0]);
+      const y = req.user;
       if(!y?.code) {
         let users = (await db.ref("users/").once("value")).val();
         if(!users) return;
@@ -152,7 +154,8 @@ const registerUserHandler = async (app, db, encrypt, encode, decode) => {
   })
   app.get("/api/reg-follow-users", requireAuth, async (req, res) => {
     try {
-      const y = await verifySessionToken(req.user[0]);
+      const y = req.user;
+      console.log(y)
       if(!y?.code) {
         let u = await getUserByEmail(y.email);
         if(u) {
@@ -167,14 +170,15 @@ const registerUserHandler = async (app, db, encrypt, encode, decode) => {
       res.status(500).json({error: "Error occurred, please try again"})
     }
   })
-  function requireAuth(req, res, next) {
+  async function requireAuth(req, res, next) {
     const authHeader = req.headers["authorization"];
     if (!authHeader ||!authHeader.startsWith("Bearer ")) {
       return res.status(401).json({ error: "No token" });
     }
     const token = authHeader.split(" ")[1];
+    const t = await verifySessionToken(decode(token)[0]);
     try {
-      req.user = decode(token);
+      req.user = t;
       next();
     } catch {
       return res.status(401).json({ error: "Invalid token" });
@@ -188,24 +192,25 @@ const registerUserHandler = async (app, db, encrypt, encode, decode) => {
     return r;
   }
   async function verifySessionToken(token) {
+    console.log(token)
     if(token) {
       let auth = token.split("/");
-      let rq = (await db.ref("users/").once("value")).val();
-      if(!rq) return ({code: 401, message: "invalid session token"});
-      rq = Object.values(rq);
-      rq = rq.find(t => t.email == auth[0]);
+      let rq = await getUserByEmail(auth[0]);
+      if(!rq) return ({code: 401, message: "Invalid session token"});
+      if(new Date().getTime() > parseInt(auth[1])) {
+        throw new Error("Session expired");
+      }
       return rq;
     }
   }
-  function generateSessionToken(email, currentTime, encrypt) {
-    const epT = "1d";
-    return encrypt(`${email}/${currentTime}/${epT}`);
+  function generateSessionToken(email, encrypt) {
+    let currentTime = Date.now()+SESSION_EXPIRES_IN;
+    return encrypt(`${email}/${currentTime}`);
   }
   async function getCountry(loc) {
+    console.log(loc)
     try {
-      const res = await fetch(
-        `https://api.bigdatacloud.net/data/reverse-geocode-client?latitude=${loc.latitude}&longitude=${loc.longitude}&localityLanguage=en`
-      );
+      const res = await fetch(`https://api.bigdatacloud.net/data/reverse-geocode-client?latitude=${loc.latitude}&longitude=${loc.longitude}&localityLanguage=en`);
       if (!res.ok) {
         throw new Error("Failed to fetch location data");
       }
