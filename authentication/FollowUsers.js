@@ -1,4 +1,4 @@
-const FollowUsers = (app, db, requireAuth) => {
+const FollowUsers = (app, db, requireAuth, getUserByEmail) => {
   app.get("/api/reg-follow-users", requireAuth, async (req, res) => {
     try {
       const y = req.user;

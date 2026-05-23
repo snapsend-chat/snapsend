@@ -10,9 +10,9 @@ const registerUserHandler = async (app, db, encrypt, encode, decode) => {
   SignIn(app, db, encode, generateSessionToken, encrypt);
   UserPrivacy(app, db, requireAuth);
   ProfilePicture(app, db, requireAuth);
-  FollowUsers(app, db, requireAuth);
+  FollowUsers(app, db, requireAuth, getUserByEmail);
   
-  const getUserByEmail = async (email) => {
+  async function getUserByEmail(email) {
     const snapshot = await db.ref("users").orderByChild("email").equalTo(email).once("value");
     if(!snapshot.exists()) return null;
     const data = snapshot.val();

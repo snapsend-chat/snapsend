@@ -20,6 +20,7 @@ const { initializeEmail } = require("./utils/email-init.js");
 const { registerUserHandler } = require("./authentication/auth.js");
 const { encrypt, decrypt, encode, decode } = require("./utils/keycrypt.js");
 const { socketInit } = require("./routes/socket-main.js");
+const { InitializeAgent } = require("./utils/agent.js");
 
 const mailings = {
   key: process.env.GMAIL_KEY,
@@ -28,6 +29,7 @@ const mailings = {
 
 initializeEmail(app, mailings);
 registerUserHandler(app, db, encrypt, encode, decode);
+//InitializeAgent(app, process.env.GEMINI_KEY);
 
 socketInit(io);
 

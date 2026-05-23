@@ -1,9 +1,7 @@
+const { VideoStreamInit } = require("../utils/VideoStreamInit.js");
 const socketInit = (io) => {
   io.on("connection", (socket) => {
-    socket.on("join-room", (id) => {
-      socket.join(id);
-      io.to(id).emit("join-room", "hello world")
-    })
+    VideoStreamInit(socket);
   })
 }
 
