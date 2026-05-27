@@ -34,7 +34,7 @@ registerUserHandler(app, db, encrypt, encode, decode);
 socketInit(io);
 
 app.get("/", (req, res) => {
-  res.send("<h1>Welcome to SnapSend! Database has been initialize!</h1>");
+  res.send("<h1 style='color: red;'>Welcome to SnapSend! Database has been initialize!</h1>");
 })
 http.listen(5000, "0.0.0.0", () => {
   console.log("Server listening on port 5000");

@@ -2,14 +2,16 @@ const { ChatGroq } = require("@langchain/groq");
 const { z } = require("zod");
 require("dotenv").config();
 
+const { ConversationStarter } = require("./agents/ConversationStarter.js");
+
 const InitializeAgent = async (app, key) => {
-  
-}
-async function MainAgent() {
   const model = new ChatGroq({
     model: "llama-3.1-8b-instant",
     temperature: 0,
   });
+  ConversationStarter(z, model);
+}
+async function MainAgent() {
   const schema = z.object({
     users: z.number(),
   });

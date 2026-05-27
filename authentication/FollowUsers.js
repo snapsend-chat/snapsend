@@ -28,7 +28,7 @@ const FollowUsers = (app, db, requireAuth, getUserByEmail) => {
         }
       }
     } catch(err) {
-      console.log(err)
+      console.log(err);
       res.status(500).json({error: "Error occurred, please try again"})
     }
   })
@@ -41,6 +41,17 @@ const FollowUsers = (app, db, requireAuth, getUserByEmail) => {
       if(!y?.code) {
         let u = await getUserByEmail(y.email);
         if(u) {
+          let validIds = [];
+          if(data.length > 0) {
+            for(let j = 0; j < data.length; j++) {
+              let userSnapshot = await db.ref(`users/${data[j]}`).once("value");
+              if(userSnapshot.exists()) {
+                let followUserRef = await db.ref(`follow/${data[j]}`).once("value");
+                validIds.push(data[j]);
+              }
+            }
+            
+          }
           res.json(data);
         }
       }
