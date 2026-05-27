@@ -2,7 +2,7 @@ const { Register } = require("./Register.js");
 const { SignIn } = require("./SignIn.js");
 const { UserPrivacy } = require("./UserPrivacy.js");
 const { ProfilePicture } = require("./ProfilePicture.js");
-const { FollowUsers } = require("./FollowUsers.js");
+const { FollowUsers } = require("../routes/FollowUsers.js");
 
 const registerUserHandler = async (app, db, encrypt, encode, decode) => {
   const SESSION_EXPIRES_IN = 1000 * 60 * 60 * 240; 
