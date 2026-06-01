@@ -1,8 +1,13 @@
-import { Redis } from '@upstash/redis'
-const redis = new Redis({
-  url: 'https://precise-termite-137122.upstash.io',
-  token: 'gQAAAAAAAheiAAIgcDFkNjdmNWZhNzgzOTU0NGRlYTNiOWIzMzk0NGQxYmEzNQ',
-})
+const { Redis } = require('@upstash/redis');
+require('dotenv').config();
 
-await redis.set("foo", "bar");
-await redis.get("foo");
+const OneTimeStore = () => {
+  const redis = new Redis({
+    url: 'https://precise-termite-137122.upstash.io',
+    token: process.env.REDIS_API_KEY,
+  })
+}
+
+// await redis.set("foo", "bar");
+// await redis.get("foo");
+module.exports = { OneTimeStore };

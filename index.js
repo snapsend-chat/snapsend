@@ -7,14 +7,8 @@ const http = require("http").createServer(app);
 app.use(cors());
 
 const io = socketServer(http, { cors: { origin: "*" } });
-const admin = require("firebase-admin");
 require('dotenv').config();
-const serviceAccount = JSON.parse(process.env.FIREBASE_AUTH);
-admin.initializeApp({
-  credential: admin.credential.cert(serviceAccount),
-  databaseURL: "https://snapsend-97e65-default-rtdb.firebaseio.com"
-});
-const db = admin.database();
+const { db } = require("./db.js");
 
 const { initializeEmail } = require("./utils/email-init.js");
 const { registerUserHandler } = require("./authentication/auth.js");
@@ -22,16 +16,12 @@ const { encrypt, decrypt, encode, decode } = require("./utils/keycrypt.js");
 const { socketInit } = require("./routes/socket-main.js");
 const { InitializeAgent } = require("./utils/agent.js");
 
-const mailings = {
-  key: process.env.GMAIL_KEY,
-  user: process.env.GMAIL_ADDR
-}
-
-initializeEmail(app, mailings);
+initializeEmail(app, process.env.RESEND_API_KEY);
 registerUserHandler(app, db, encrypt, encode, decode);
+
 //InitializeAgent(app, process.env.GEMINI_KEY);
 
-socketInit(io);
+socketInit(io, decode);
 
 app.get("/", (req, res) => {
   res.send("<h1 style='color: red;'>Welcome to SnapSend! Database has been initialize!</h1>");

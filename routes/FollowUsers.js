@@ -42,7 +42,7 @@ const FollowUsers = (app, db, requireAuth, getUserByEmail) => {
     }
   });
   
-  //// Follow request - POST request ///
+  // Follow request - POST request //
   app.post("/api/reg-follow-users", requireAuth, async (req, res) => {
     const data = req.body;
     try {
