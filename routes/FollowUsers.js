@@ -65,7 +65,6 @@ const FollowUsers = (app, db, requireAuth, getUserByEmail) => {
               }
             }
           }
-          console.log("Done")
           res.status(200).json({message: "done"});
         }
       }

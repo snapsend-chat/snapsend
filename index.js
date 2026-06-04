@@ -10,6 +10,18 @@ const io = socketServer(http, { cors: { origin: "*" } });
 require('dotenv').config();
 const { db } = require("./db.js");
 
+async function init() {
+  const communityRef = await db.ref(`communities/global_ping/`).once("value");
+  if(!communityRef.exists()) {
+    await db.ref(`communities/global_ping/`).set({
+      name: "Global Ping",
+      admins: ["9487832656"],
+      description: "Global Ping 24/7 hangout. Zero borders, all timezones. Drop a ping, meet the world. Be kind, keep it fun."
+    })
+  }
+}
+init();
+
 const { initializeEmail } = require("./utils/email-init.js");
 const { registerUserHandler } = require("./authentication/auth.js");
 const { encrypt, decrypt, encode, decode } = require("./utils/keycrypt.js");
@@ -19,9 +31,9 @@ const { InitializeAgent } = require("./utils/agent.js");
 initializeEmail(app, process.env.RESEND_API_KEY);
 registerUserHandler(app, db, encrypt, encode, decode);
 
-//InitializeAgent(app, process.env.GEMINI_KEY);
+//InitializeAgent(app);
 
-socketInit(io, decode);
+socketInit(io, decode, db);
 
 app.get("/", (req, res) => {
   res.send("<h1 style='color: red;'>Welcome to SnapSend! Database has been initialize!</h1>");
