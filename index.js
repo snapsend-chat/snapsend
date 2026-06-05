@@ -11,12 +11,18 @@ require('dotenv').config();
 const { db } = require("./db.js");
 
 async function init() {
-  const communityRef = await db.ref(`communities/global_ping/`).once("value");
+  const r = `communities/global_ping/`;
+  const communityRef = await db.ref(r).once("value");
   if(!communityRef.exists()) {
-    await db.ref(`communities/global_ping/`).set({
+    await db.ref(r).set({
       name: "Global Ping",
       admins: ["9487832656"],
-      description: "Global Ping 24/7 hangout. Zero borders, all timezones. Drop a ping, meet the world. Be kind, keep it fun."
+      description: "Global Ping 24/7 hangout. Zero borders, all timezones. Drop a ping, meet the world. Be kind, keep it fun.",
+      rules: {
+        countries: [],
+        age: null
+      },
+      entry: "General"
     })
   }
 }

@@ -49,10 +49,10 @@ const socketInit = (io, decode, db) => {
         const history = chatHistories[i];
         if(history.type == "community") {
           const response = await fetchCommunityDetails(history.id);
-          finalHistory.push(response);
+          finalHistory.push({...response, ...history});
         } else if(history.type == "friend") {
           const response = await fetchFriendDetails(history.id);
-          finalHistory.push(response);
+          finalHistory.push({...response, ...history});
         }
         if(chatHistories.length-1 == i) io.to(uid).emit("fetch-chat-history", finalHistory);
       }
