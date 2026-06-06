@@ -36,11 +36,15 @@ const socketInit = (io, decode, db) => {
           [ckey]: {
             type: "community",
             timestamp: new Date().getTime(),
-            id: "global_ping"
+            id: "global_ping",
+            prefs: {
+              deleted: false,
+              isHidden: false
+            }
           }
         });
         const response = await fetchCommunityDetails("global_ping");
-        io.to(uid).emit("fetch-chat-history", [response]);
+        io.to(uid).emit("fetch-chat-history", [{...response}]);
         return;
       }
       chatHistories = chatHistories.val();
